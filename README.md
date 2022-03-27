@@ -1,5 +1,5 @@
 # Trending YouTube Video Data Visualization
-### For MM802 Mini Project
+
 
 Members: [ Atom(Shufan) Cai, Yohannes Woldemichael ]
 
