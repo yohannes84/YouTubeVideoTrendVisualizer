@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+</style>
+<body>
+    <h1>Tnis page is for pre-processing the raw video dataset.</h1>
+
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://d3js.org/d3-dsv.v1.min.js"></script>
+  
+    <script>
+        var oldVideoDataFilename = "data/DEvideos.csv";
+        var newVideoDataFilename = "video_data_de.csv";
+
+        function saveDataToFile(data, filename, type) {
+            var file = new Blob([data], {type: type});
+            if (window.navigator.msSaveOrOpenBlob) // IE10+
+                window.navigator.msSaveOrOpenBlob(file, filename);
+            else { // Others
+                var a = document.createElement("a"),
+                        url = URL.createObjectURL(file);
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function() {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);  
+                }, 0); 
+            }
+        }
+
+        var rawFile = new XMLHttpRequest();
+        rawFile.open("GET", oldVideoDataFilename, true);      
+       
+        rawFile.onreadystatechange = function ()
+        {
+            if(rawFile.readyState === 4)
+            {
+                if(rawFile.status === 200 || rawFile.status == 0)
+                {
+                    var allText = rawFile.responseText;
+                    alert(allText);
+
+                    var csvString = allText.replace(/"\|"/g,"|");
+                    
+                    alert(csvString);
+
+                    var data = d3.csvParse(csvString, 
+                        function(d) {
+                            return d;
+                        });
+                                        
+                    console.log(data);~
+                    
+                    newCSVString = d3.csvFormat(data);
+                    alert(newCSVString);
+
+                    saveDataToFile(newCSVString, newVideoDataFilename, 'text/plain');                   
+
+                }
+            }
+        }
+
+        rawFile.send(null);
+
+    </script>
+</body>

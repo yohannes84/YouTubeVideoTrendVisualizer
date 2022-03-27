@@ -1,0 +1,2349 @@
+<!DOCTYPE html>
+<html>
+<title>Trending YouTube Video Data Visualization</title>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="css/w3.css">
+<link rel="stylesheet" href="css/font-awesome.min.css">
+<style>
+    body {
+        font-family: "Times New Roman", Georgia, Serif;
+    }
+
+    h1,h2,h3,h4,h5,h6 {
+        font-family: "Playfair Display";
+        letter-spacing: 5px;
+    }
+
+    caption {   background-color:#f44336; 
+                color:white;
+                border:1px dotted;
+                font:bold 22px arial; 
+                border-radius: 10px 10px 0px 0px; 
+                height:40px; 
+                margin: 0px 0px 4px 0px; 
+                vertical-align:middle;
+                }
+
+    th      {   background-color:#f44336; 
+                color:white;
+                font:bold 18px arial;
+                height:40px;
+                padding:2px;
+            }
+
+    td      { border:1px dotted; padding:2px; font-size:14px;}
+
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+
+    .bar {
+      fill: orange;
+    }
+
+    .bar:hover {
+      fill: orangered ;
+    }
+
+    .x.axis path {
+      display: none;
+    }
+
+    .d3-tip {
+      line-height: 1;
+      font-weight: bold;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      border-radius: 2px;
+    }
+
+    .d3-tip:after {
+      box-sizing: border-box;
+      display: inline;
+      font-size: 10px;
+      /* width: 100%; */
+      line-height: 1;
+      color: rgba(0, 0, 0, 0.8);
+      content: "\25BC";
+      position: absolute;
+      text-align: center;
+    }
+
+    .d3-tip.n:after {
+      margin: -1px -1px 0 0;
+      top: 100%;
+      left: 50%;
+    }
+
+    .container {
+        width: 100%;
+        /* max-width: 800px; */
+        min-width: 330px;
+        background: #fff;
+        margin-left: auto;
+        margin-right: auto;
+     
+        margin-top: 40px;
+        margin-bottom: 40px;
+        padding: 0px 40px 20px 40px;
+    }
+
+    .vid-container {
+        position: relative;
+        margin-bottom: 112px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 520px;
+        height: 320px; 
+        background-color:rgb(207, 92, 92);
+    }
+   
+    .vid-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .vid-list-container {
+        width: 640px;
+        margin-left: auto;
+        margin-right: auto;
+        overflow-y: hidden;
+        overflow-x: scroll;
+        z-index: 8;
+        /* padding: 128px 0px 0px 0px; */
+        /* margin-left:4%; */
+        /* padding-bottom: 20px; */
+        /* background-color:rgba(0, 0, 0, 0.8); */
+        border: 1px dotted grey;
+    }
+
+    .vid-list {
+        width: 640px;
+        position: relative;
+        height: 128px;
+        background-color:rgba(0, 0, 0, 0.8);
+        /* top:0;
+        left: 0; */
+    }
+
+    .vid-item {
+        display: block;
+        width: 148px;
+        height: 128px;
+        float: left;
+        margin: 0;
+        padding: 10px 10px 10px 10px;
+        /* background-color:rgba(0, 0, 0, 0.8); */
+    }
+
+    .thumb {
+        /*position: relative;*/
+        overflow:hidden;
+        height: 84px;
+    }
+
+    .thumb img {
+        width: 100%;
+        position: relative;
+        top: -13px;
+    }
+
+    .vid-item .desc {
+        color: white;
+        font-size: 15px;
+        margin-top:5px;
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow:ellipsis;
+    }
+  
+    .vid-item:hover {
+        background:darkgrey;
+        cursor: pointer;
+    }
+
+    .arrows {
+        position:relative;
+        width: 100%;
+    }
+
+    .arrow-left {
+        color: lightcoral;
+        position: absolute;
+        /* background: #777; */
+        /* padding: 16px; */
+        left: 50%;
+        transform:translate(-388px,0);
+        top: -108px;
+        cursor: pointer;
+        /* border: 1px solid white; */
+    }
+
+    .arrow-right {
+        color: lightcoral;
+        position: absolute;
+        /* background: #777; */
+        /* padding: 16px; */
+        right: 50%;
+        transform:translate(388px,0);
+        top: -108px;
+        cursor: pointer;
+        /* border: 1px solid white; */
+    }
+
+    .arrow-left:hover {
+        color: #CC181E;
+    }
+
+    .arrow-right:hover {
+        color: #CC181E;
+    }
+
+    #tooltip {
+        position: absolute;
+        width: 200px;
+        height: auto;
+        padding: 8px;
+        background-color: white;
+        -webkit-border-radius: 10px;
+        -moz-border-radius: 10px;
+        border-radius: 10px;
+        -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+        -mox-box-shadow: 4px 4px 4px 10px rgba(0, 0, 0, 0.4);
+        box-shadow: 4px 4px 10px rbga(0, 0, 0, 0.4);
+        pointer-events:none;
+    }
+    #tooltip.hidden {
+        opacity: 0;
+    }
+    #tooltip p {
+        margin-top: 0;
+        margin-left: auto;
+        margin-right: auto;
+        font-family: sans-serif;
+        font-size: 16px;
+        line-height: 20px;
+    }
+
+    .arc {
+        opacity: 0.85;
+      }
+      
+    .arc:hover {
+        opacity: 1;
+    }
+
+    .legend {
+        padding: 5px;
+        font: 10px sans-serif;
+        background: yellow;
+        box-shadow: 2px 2px 1px #888;
+    }
+</style>
+
+<script src="scripts/topojson.min.js"></script>
+<script src="scripts/d3.v4.js"></script>
+<script src="scripts/d3-tip.js"></script>
+<script src="scripts/jquery-2.0.3.min.js"></script>
+<script src="scripts/d3.layout.cloud.js"></script>
+
+<body>
+    <div class="w3-top" >
+        <div class="w3-bar w3-red w3-padding w3-card" style="letter-spacing:4px;">
+            <!-- <a href="index.html" class="w3-bar-item w3-button w3-text-white w3-hover-white" style="width:38px; margin-top:-1px"><img src="imgs/maplestory-icon.png" style="position:absolute; width:32px;transform:translate(-12px,-5px)"></img>&nbsp</a>
+            <span class="w3-bar-item w3-text-white w3-hover-red" style="padding-left:8px;">
+                <i class="fa fa-hand-o-left" style="position:absolute; font-size:24px; transform:translate(0px,-2px)"></i>
+                &nbsp&nbsp&nbsp&nbspClick to Go Home
+            </span> -->
+            <img src="imgs/youtube-top-nav-icon.png" style="position:absolute; width:32px;transform:translate(0px,7px)"></img>
+            <span class="w3-bar-item w3-text-white w3-hover-red" style="margin-left:28px;">
+                Trending YouTube Video Data Visualization
+            </span>
+
+            <div class="w3-right w3-hide-small">
+                <span class="w3-bar-item w3-text-white w3-hover-red">Made By Atom & Yohannes</span>
+            </div>
+        </div>
+    </div>
+
+    <h1 class="w3-container w3-center" 
+        style="padding:118px 0 0px 0; transform: translate(-20px, 0);">
+        <img style="height:96px; transform: translate(16px, -28px);" src="imgs/youtube-logo.gif"></img>
+        <b class="w3-margin" id="page-heading-text" style="font-size:32px"></b>
+    </h1>
+    
+    <div class="w3-white w3-center">
+        <h4 id='video-heading' style="margin:48px 48px 48px 48px">            
+            <b id="vid-rank" style="color:#CC181E">&nbsp</b>   
+            <span id="vid-title">MapleStory Symphony in Budapest - When The Morning Comes</span>
+        </h4>
+        
+        <img style="position:absolute; z-index:0; height:96px; left:50%; transform: translate(-400px, 192px);"  src="imgs/atom-character.gif"></img>
+        <img style="position:absolute; z-index:0; height:96px; right:50%; transform: translate(400px, 192px);"  src="imgs/yohannes-character.gif"></img>
+
+        <div id="video-player" class="container">
+            <img style="position:absolute; z-index:0; width:574px; height:468px; transform: translate(-50%, -47px);  left:50%;"  src="imgs/youtube_TV.jpg"></img>
+            
+            <div class="vid-container">
+                <iframe id="vid_frame" allowFullScreen='allowFullScreen' 
+                    src="http://youtube.com/embed/SWOEVxpuiqE?autoplay=1&rel=0&showinfo=0&autohide=1&controls=0" 
+                    
+                    frameborder="0">
+                </iframe>
+                <img id="404-img" style="position:relative; z-index:0; width:520px; height:320px; transform: translate(-50%, 0px);  left:50%;"  src="imgs/404.jpg"></img>
+            </div>
+
+            <div class="vid-list-container">
+                <div class="vid-list" id="vid-list" >                  
+                   
+                </div>          
+            </div>
+        
+            <div class="arrows">
+                <div class="arrow-left"><i class="fa fa-chevron-circle-left" style="font-size:48px"></i></div>
+                <div class="arrow-right"><i class="fa fa-chevron-circle-right" style="font-size:48px"></i></div>        
+            </div>
+        </div>
+
+        <div style="font-size:20px; padding-right:50%; transform: translate(240px, 0);" align="right">
+            <div style="margin:16px 16px 16px 16px;white-space:nowrap;">
+                Region&nbsp
+                <select id="select-region" style="width:320px" onchange="onSelectRegionChange()" >
+                    <option disabled selected> -- select a region -- </option>
+                </select>
+            </div>
+            <div style="margin:16px 16px 16px 16px;white-space:nowrap;">
+                Video Category&nbsp
+                <select id="select-category" style="width:320px" onchange="onSelectCategoryChange(this)">
+                    <!-- <option disabled selected> -- select a category -- </option> -->
+                </select>
+            </div>
+            <div style="margin:16px 16px 16px 16px;white-space:nowrap;" >
+                Topic&nbsp
+                <select id="select-topic" style="width:320px" onchange="onSelectTopicChange(this)">
+                    <!-- <option disabled selected> -- select a topic -- </option> -->
+                </select>
+            </div>
+            <div id="div-max-search-num" style="margin:16px 16px 16px 16px;white-space:nowrap;display:none">
+                <span id="text-max-search-num" >Maximum Search Number (<30)&nbsp</span>
+                <!-- <select style="width:320px">
+                    
+                </select> -->
+                <input id="input-max-search-num" type="number" name="quantity" min="1" max="30">
+            </div>
+        </div>
+
+        <button id="search-button" class="button" style="font-size:20px;" onclick="onClickSearchButton(this)">
+            Let's See!
+        </button>
+   
+
+        <table id="ranking-table" align="center" style="margin-top:48px">
+
+        </table>
+    
+        <div id="bar-graph" align="center">
+    
+        </div>
+
+        <div id="pie-graph" align="center">
+    
+        </div>
+        
+        <div id="word-cloud-graph" align="center">
+    
+        </div>
+        
+        <div id="tooltip" style="display:none">
+            <p style="margin-bottom:8px">
+                <strong id="pie-graph-tip-title">Important Label Heading</strong>
+            </p>
+            <p style="margin-bottom:4px">
+                <span id="pie-graph-tip-value">100</span>
+            </p>
+            <p style="margin-bottom:0px">
+                <span id="pie-graph-tip-percent">50</span>
+            </p>
+        </div>
+
+        <div id="loading" style="padding-bottom:40px; padding-top:80px">
+            <img src="imgs/loading.gif" style="width:256px"></img>
+            <br>
+            <h2 id="loading-text" style="color:#CC181E;">Please Wait Loading...</h2>    
+        </div>
+
+        <div>
+            <button style="font-size:20px; float: right; margin-right:8px; margin-bottom:8px" onclick="saveCachedSearchedDataToFile()">Save Cache</button>
+        </div> 
+
+    </div>
+
+    <!-- <script src="scripts/data-page-base.js"></script>
+    <script src="scripts/data-page-regional.js"></script> -->
+    <script>
+        var cachedSearchedDataFilename = "cached_searched_data.json";
+
+        function urlExists(url)
+        {
+            var http = new XMLHttpRequest();
+            http.open('HEAD', url, false);
+            http.send();
+
+            if(http.status!=404){
+                console.log("'"+url+"' file exists!")
+                return true;
+            }else{
+                console.log("'"+url+"' file doesn't exist!")
+                return false;
+            }
+        }
+
+        var cachedSearchedData = null;
+
+        function loadCachedData(){
+            if(urlExists("data/"+cachedSearchedDataFilename)){
+                $.getJSON("data/"+cachedSearchedDataFilename, function(data) { 
+                    cachedSearchedData=data;
+                    console.log("load cached searched data from file");
+                    console.log(cachedSearchedData);
+                }); 
+            }else{         
+                cachedSearchedData={};
+            }
+        }
+
+        loadCachedData();
+
+        var allCategoriesId = "99";
+
+        var videoData=null;
+        var categoryData=null;
+
+        var searchedRegionId=null;
+        var searchedCategoryId=null;
+        var searchedTopicId=null;
+        var searchedVideoData=null;
+
+        var selectedVideoIndex = 0; 
+
+        var headerText = "Trending YouTube Video Data Visualization";
+        var maxSearchNumUpperbound = 100;
+        var graphCaptionFontSize=22;
+        var asynSearchVideoData = true;
+        var wordCloudMaxFontSize = 100;
+
+        document.getElementById("page-heading-text").innerHTML = headerText;
+        // document.getElementById("defaultOpen").click();
+        document.getElementById("404-img").style.display = "none";
+        document.getElementById("text-max-search-num").innerHTML = "Maximum Search Number (<"+maxSearchNumUpperbound+")&nbsp"
+        document.getElementById("loading").style.display = "none";
+
+        var regionData = {
+            "ca":{
+                name:"Canada"
+            },
+            "us":{
+                name:"USA"
+            },
+            "gb":{
+                name:"Britain"
+            },
+            "fr":{
+                name:"France"
+            },
+            "de":{
+                name:"Germany"
+            },
+            "gl":{
+                name:"Global"
+            }
+        }
+        
+        var selectRegion = document.getElementById("select-region");
+
+        for(var key in regionData){
+            var option = document.createElement("option");
+            option.text = regionData[key].name;
+            option.value = key;
+            selectRegion.appendChild(option);
+        }
+
+        function cleanSelectCategoryOptions(){
+            var selectCategory = document.getElementById("select-category");
+            while (selectCategory.firstChild) {
+                selectCategory.removeChild(selectCategory.firstChild);
+            }
+        }
+
+        function loadSelectCategoryOptions(){
+           
+            var selectRegion = document.getElementById("select-region");
+            var selectedRegionId = selectRegion.options[selectRegion.selectedIndex].value;
+
+            if(categoryData==null || categoryData[selectedRegionId]==null){
+                loadRegionCategoryData(selectedRegionId,loadSelectCategoryOptions);
+                return;
+            }
+
+            var selectCategory = document.getElementById("select-category");
+
+            var option = document.createElement("option");
+            option.text = "-- select a category --";
+            option.disabled = true;
+            option.selected = true;
+            selectCategory.appendChild(option);
+
+            for(var key in categoryData[selectedRegionId]){
+                if(categoryData[selectedRegionId].hasOwnProperty(key)){
+                    var option = document.createElement("option");
+                    option.text = categoryData[selectedRegionId][key].title;
+                    option.value = key;
+           
+                    selectCategory.appendChild(option);
+                }
+            }
+        }
+        
+        function cleanSelectTopicOptions(){
+            var selectTopic = document.getElementById("select-topic");
+            while (selectTopic.firstChild) {
+                selectTopic.removeChild(selectTopic.firstChild);
+            }
+        }
+
+        function loadSelectTopicOptions(){
+            var selectRegion = document.getElementById("select-region");
+            var selectedRegionId = selectRegion.options[selectRegion.selectedIndex].value;
+            var selectCategory = document.getElementById("select-category");
+            var selectedCategoryId = selectCategory.options[selectCategory.selectedIndex].value;
+
+            var selectTopic = document.getElementById("select-topic");
+
+            var option = document.createElement("option");
+            option.text = "-- select a topic --";
+            option.disabled = true;
+            option.selected = true;
+            selectTopic.appendChild(option);
+
+            for(var key in topicsOption){
+                var option = document.createElement("option");
+
+                if(topicsOption[key].categoryId==allCategoriesId 
+                && selectedCategoryId!=allCategoriesId){
+                    continue;
+                }
+
+                option.text = topicsOption[key].text;
+                option.value = key;
+                selectTopic.appendChild(option);
+            }
+
+            onSelectTopicChange(selectTopic);
+        }
+
+        function includeOrNot(idSet,id){
+            var included = false;
+            
+            for(var j=0;j<idSet.length;j+=1){
+                if(idSet[j]==id){
+                    included=true;
+                    break;
+                }
+            }
+
+            return included;
+        }
+
+        var topicsOption = {
+            "most-viewed":{
+                text:"Most Viewed Videos"
+            },
+            "most-liked":{
+                text:"Most Liked Videos"
+            },
+            "most-disliked":{
+                text:"Most Disliked Videos"
+            },
+            "most-commented":{
+                text:"Most Commented Videos"
+            },
+            "highest-likes-to-dislikes":{
+                text:"Videos with Highest Likes-to-Dislikes Ratios"
+            },
+            "highest-dislikes-to-likes":{
+                text:"Videos with Highest Dislikes-to-Likes Ratios"
+            },
+            "title-word-cloud":{
+                text:"Video Title Word Cloud"
+            },
+            "tag-word-cloud":{
+                text:"Video Tag Word Cloud"
+            },
+            "categories-video-num":{
+                text:"Categories Trending Video Number",
+                categoryId:allCategoriesId
+            },
+            "categories-views":{
+                text:"Categories Views",
+                categoryId:allCategoriesId
+            },
+            "categories-likes":{
+                text:"Categories Likes",
+                categoryId:allCategoriesId
+            },
+            "categories-dislikes":{
+                text:"Categories Dislikes",
+                categoryId:allCategoriesId
+            },
+            "categories-comments":{
+                text:"Categories Comments",
+                categoryId:allCategoriesId
+            }
+        }
+
+        function loadRegionCategoryData(regionId, callback){
+           
+            if(categoryData==null){
+                categoryData = {};
+            }
+
+            if(categoryData[regionId]!=null){
+                if(callback!=null){
+                    callback();
+                }
+            }
+
+            d3.json(getCategoryDataFilename(regionId), function(root) {
+
+                var categoryItems = root.items;
+
+                temp = {};
+                for(var i=0;i<categoryItems.length;i+=1){
+                    var categoryId = categoryItems[i].id;
+                    var categoryTitle = categoryItems[i].snippet.title;
+                    temp[categoryId]={};
+                    temp[categoryId].title = categoryTitle;
+                }
+
+                temp[allCategoriesId]={};
+                temp[allCategoriesId].title = "All Categories";
+
+                categoryData[regionId]=temp;
+
+                if(callback!=null){
+                    callback();
+                }
+            });
+        }
+
+        function getVideoDataFilename(regionId){
+            return "data/video_data_"+regionId+".csv";
+        }
+
+        function getCategoryDataFilename(regionId){
+            if(regionId=="gl"){
+                return "data/category_data_us.json";
+            }
+
+            return "data/category_data_"+regionId+".json";
+        }
+
+        function onClickSearchButton(button){
+  
+            var selectRegion = document.getElementById("select-region");
+            var regionId = selectRegion.options[selectRegion.selectedIndex].value;
+
+            var selectCategory = document.getElementById("select-category");
+            var categoryId = selectCategory.options[selectCategory.selectedIndex].value;
+
+            var selectTopic = document.getElementById("select-topic");
+            var topicId = selectTopic.options[selectTopic.selectedIndex].value;
+
+            switch(topicId){
+                case "most-viewed":
+                case "most-liked":
+                case "most-disliked":
+                case "most-commented":
+                case "highest-likes-to-dislikes":
+                case "highest-dislikes-to-likes":
+                    var maxSearchNumber = document.getElementById("input-max-search-num").value;
+
+                    if(maxSearchNumber==""){
+                        alert("Please enter the maximum search number.");
+                        return;
+                    }else if (maxSearchNumber<1){
+                        alert("Maximum search number should not be smaller than 1.");
+                        return;
+                    }else if (maxSearchNumber>maxSearchNumUpperbound){
+                        alert("Maximum search number should not be bigger than "+maxSearchNumUpperbound+".");
+                        return;
+                    }                   
+            }
+            
+            button.disabled = true;
+            cleanVideoPlayer();
+            cleanRankingTable();
+            cleanBarGraph(); 
+            cleanPieGraph();
+            cleanWordCloudGraph();
+            document.getElementById("loading-text").innerHTML="Please Wait Loading..."
+            document.getElementById("loading").style.display = "block";
+
+            searchedRegionId = regionId;
+            searchedCategoryId = categoryId;
+            searchedTopicId = topicId;
+
+            if(regionId=="gl"){
+                switch(topicId){
+                case "categories-video-num":
+                case "categories-views":
+                case "categories-likes":
+                case "categories-dislikes":
+                case "categories-comments":
+                case "title-word-cloud":
+                case "tag-word-cloud":
+                    var callback1;
+                    switch(topicId){
+                        case "categories-video-num":
+                        callback1 = function(){
+                            
+                            loadPieGraph(
+                                searchedVideoData, 
+                                getCaptionText(Object.keys(regionData)[i], categoryId, topicId),
+                                "title",
+                                "video_num",
+                                "video_num_percent");
+                        };
+                        break;
+                        case "categories-views":
+                        callback1 = function(){
+                            loadPieGraph(
+                                searchedVideoData, 
+                                getCaptionText(Object.keys(regionData)[i], categoryId, topicId),
+                                "title",
+                                "views",
+                                "views_percent");
+                        };
+                        break;
+                        case "categories-likes":
+                        callback1 = function(){
+                            loadPieGraph(
+                                searchedVideoData, 
+                                getCaptionText(Object.keys(regionData)[i], categoryId, topicId),
+                                "title",
+                                "likes",
+                                "likes_percent");
+                        };
+                        break;
+                        case "categories-dislikes":
+                        callback1 = function(){
+                                loadPieGraph(
+                                    searchedVideoData, 
+                                    getCaptionText(Object.keys(regionData)[i], categoryId, topicId),
+                                    "title",
+                                    "dislikes",
+                                    "dislikes_percent");
+                            };
+                            break;
+                        case "categories-comments":
+                        callback1 = function(){
+                                loadPieGraph(
+                                    searchedVideoData, 
+                                    getCaptionText(Object.keys(regionData)[i], categoryId, topicId),
+                                    "title",
+                                    "comment_count",
+                                    "comment_count_percent");
+                            };
+                            break;
+                        case "title-word-cloud":                            
+                        case "tag-word-cloud":
+                            callback1 = function(){
+                                loadWordCloudGraph(
+                                    searchedVideoData,
+                                    getCaptionText(Object.keys(regionData)[i], categoryId, topicId));
+                            };
+                            break;
+                    }
+
+                    var i=0;
+                    if(Object.keys(regionData)[i]=="gl"){
+                        i+=1;        
+                    }
+
+                    var callback2 = function(){
+
+                        callback1();
+
+                        i+=1;
+
+                        switch(topicId){
+                            case "categories-video-num":
+                            case "categories-views":
+                            case "categories-likes":
+                            case "categories-dislikes":
+                            case "categories-comments":
+                                if(Object.keys(regionData)[i]=="gl"){
+                                    i+=1;        
+                                }
+                            break;
+                        }
+
+                        if(i<Object.keys(regionData).length){
+                            searchVideoData(Object.keys(regionData)[i], categoryId, topicId, maxSearchNumber,asynSearchVideoData,callback2);               
+                        }else{
+                            document.getElementById("loading").style.display = "none";
+                            button.disabled = false;
+                        }
+                    
+                    }
+                    searchVideoData(Object.keys(regionData)[i], categoryId, topicId, maxSearchNumber,asynSearchVideoData,callback2);
+                    return;
+                }
+            }
+            
+            searchVideoData(regionId, categoryId, topicId, maxSearchNumber,asynSearchVideoData,function(){                                
+
+                    switch(topicId){
+                        case "most-viewed":                        
+                        case "most-liked":                        
+                        case "most-disliked":                        
+                        case "most-commented":
+                        case "highest-likes-to-dislikes":
+                        case "highest-dislikes-to-likes":
+                            var sortField;
+                            var yAxisFormatFunc=null;
+                            switch(topicId){
+                                case "most-viewed":                                
+                                sortField="views";
+                                yAxisFormatFunc=function(d) { return Math.round(d/1000)+'k'; };
+                                break
+                                case "most-liked":
+                                sortField="likes";
+                                yAxisFormatFunc=function(d) { return Math.round(d/1000)+'k'; };
+                                break
+                                case "most-disliked":
+                                sortField="dislikes";
+                                yAxisFormatFunc=function(d) { return Math.round(d/1000)+'k'; };
+                                break
+                                case "most-commented":
+                                sortField="comment_count";
+                                yAxisFormatFunc=function(d) { return Math.round(d/1000)+'k'; };
+                                break;
+                                case "highest-likes-to-dislikes":
+                                sortField="likes_to_dislikes";
+                                break;
+                                case "highest-dislikes-to-likes":
+                                sortField="dislikes_to_likes";
+                                break;
+                            }
+                            loadVideoPlayer();
+                            loadRankingTable();
+                            
+                            loadBarGraph(
+                                searchedVideoData,
+                                getCaptionText(regionId, categoryId, topicId),
+                                "video_id",
+                                sortField,
+                                "title",
+                                yAxisFormatFunc
+                            );                            
+                        break;
+
+                        case "title-word-cloud":
+                        case "tag-word-cloud":
+
+                            loadWordCloudGraph(
+                                searchedVideoData,
+                                getCaptionText(regionId, categoryId, topicId));
+                            
+                            break;
+
+                        case "categories-video-num":
+                            
+                            loadPieGraph(
+                                searchedVideoData,
+                                getCaptionText(regionId, categoryId, topicId),
+                                "title",
+                                "video_num",
+                                "video_num_percent");
+
+                            break;
+                        case "categories-views":
+                        case "categories-likes":
+                        case "categories-dislikes":
+                        case "categories-comments":
+
+                            var sortField;
+                            switch(topicId){
+                                case "categories-views":
+                                sortField="views";
+                                break
+                                case "categories-likes":
+                                sortField="likes";
+                                break
+                                case "categories-dislikes":
+                                sortField="dislikes";
+                                break
+                                case "categories-comments":
+                                sortField="comment_count";
+                                break;
+                            }
+
+                            var sortedData = JSON.parse(JSON.stringify(searchedVideoData));
+                            sortedData = sortedData.sort(
+                                function(a,b){
+                                    return b[sortField]-a[sortField];
+                                });
+
+                            loadBarGraph(
+                                sortedData,
+                                getCaptionText(regionId, categoryId, topicId),
+                                "title",
+                                sortField,
+                                "title",
+                                function(d) { return Math.round(d/1000000)+'m'; }
+                            );
+                          
+                            loadPieGraph(
+                                searchedVideoData,
+                                getCaptionText(regionId, categoryId, topicId),
+                                "title",
+                                sortField,
+                                sortField+"_percent");
+
+                            break;
+                    }
+
+                    document.getElementById("loading").style.display = "none";
+                    button.disabled = false;
+                });
+           
+        }
+
+        function onSelectRegionChange(){
+            cleanSelectCategoryOptions();
+            cleanSelectTopicOptions();
+            loadSelectCategoryOptions();           
+        }
+
+        function onSelectCategoryChange(select){
+            cleanSelectTopicOptions();
+            loadSelectTopicOptions();
+        }
+
+        function onSelectTopicChange(select){
+
+            var topicId = select.options[select.selectedIndex].value;
+
+            var divMaxSearchNum = document.getElementById("div-max-search-num");
+
+            switch(topicId){
+                case "most-viewed":
+                case "most-liked":
+                case "most-disliked":
+                case "most-commented":
+                case "highest-likes-to-dislikes": 
+                case "highest-dislikes-to-likes":                  
+                    divMaxSearchNum.style.display = "block";
+                break;
+                case "title-word-cloud":
+                case "tag-word-cloud":
+                default:
+                    divMaxSearchNum.style.display = "none";
+                break;
+            }
+        }
+
+        function iterateLoadRegionVideoData(i,tempGlobalVideoData,callback){
+            console.log("iterateLoadRegionVideoData");
+            var regionId = Object.keys(regionData)[i];
+   
+            console.log(regionId);
+
+            if(regionId != 'gl'){
+                if(videoData[regionId]==null){
+                    d3.csv(getVideoDataFilename(regionId),
+                        function(data){
+                            data.views = +data.views;
+                            data.likes = +data.likes;
+                            data.dislikes = +data.dislikes;
+                            data.comment_count = +data.comment_count;
+                            return data;
+                        },
+                        function(error,data){
+
+                            videoData[regionId]=data;
+                            Array.prototype.push.apply(tempGlobalVideoData,data); 
+
+                            i+=1;
+                            if(i<Object.keys(regionData).length){
+                                setTimeout(
+                                    function(){
+                                        iterateLoadRegionVideoData(i,tempGlobalVideoData,callback);
+                                    },0);
+                                
+                            }else{
+                                videoData['gl'] = tempGlobalVideoData;
+
+                                if(callback!=null){
+                                    callback();
+                                }
+                            }
+                        });
+                    return;
+                }else{
+                    Array.prototype.push.apply(tempGlobalVideoData,videoData[regionId]); 
+                }
+            }
+
+            i+=1;
+            if(i<Object.keys(regionData).length){
+                setTimeout(
+                    function(){
+                        iterateLoadRegionVideoData(i,tempGlobalVideoData,callback);
+                    },0);
+                
+            }else{
+                videoData['gl'] = tempGlobalVideoData;
+
+                if(callback!=null){
+                    callback();
+                }
+            }
+          
+        }
+
+        function loadRegionVideoData(regionId,callback){
+            console.log("loadRegionVideoData");
+            if(videoData==null){
+                videoData = {};
+            }
+
+            if(videoData[regionId]!=null){
+                if(callback!=null){
+                    callback();
+                }
+            }
+
+            if(regionId=="gl"){
+                var temp=[];
+                setTimeout(
+                    function(){
+                        iterateLoadRegionVideoData(
+                            0,temp,
+                            callback);
+                    },0);
+
+                return;
+            }
+
+            d3.csv(getVideoDataFilename(regionId),
+                function(data){
+                    data.views = +data.views;
+                    data.likes = +data.likes;
+                    data.dislikes = +data.dislikes;
+                    data.comment_count = +data.comment_count;
+                    return data;
+                },
+                function(error,data){
+                    
+                    // console.log("region video data:");
+                    
+                    videoData[regionId]=data;
+                    if(callback!=null){
+                        callback();
+                    }
+                });
+        }
+
+        function iterateCountWords(
+            i,regionId, categoryId, topicId, tempWordsCount, videoIdSet, callback)
+            {
+            console.log("iterateCountWords");
+            console.log(i);
+            document.getElementById("loading-text").innerHTML="Loading "+i+" / "+videoData[regionId].length;
+
+            if(categoryId==allCategoriesId || videoData[regionId][i].category_id==categoryId){
+                if(includeOrNot(videoIdSet,videoData[regionId][i].video_id)==false){
+                    
+                    var wordArray;
+                    if(topicId == "title-word-cloud"){
+                        var title = videoData[regionId][i].title;
+                        title = title.replace(/[‘’“”?.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+                        wordArray = title.split(/[ ]+/);
+                    }else if(topicId=="tag-word-cloud"){
+                        var tags = videoData[regionId][i].tags;
+                        // tags = title.replace(/[‘’“”?.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+                        wordArray = tags.split("|");
+                    }                            
+                
+                    for(var j=0;j<wordArray.length;j+=1){
+                        var word = wordArray[j];
+                        word = word.toLowerCase();
+                        if(word in tempWordsCount){
+                            tempWordsCount[word]+=1;
+                        }else{
+                            tempWordsCount[word]=1;
+                        }
+                    }
+
+                    videoIdSet.push(videoData[regionId][i].video_id);
+                }
+            }
+
+            i+=1;
+            if(i<videoData[regionId].length){
+                setTimeout(
+                    function(){
+                        iterateCountWords(i,regionId, categoryId, topicId, tempWordsCount, videoIdSet, callback);
+                    },0);                
+            }else{
+                if(callback!=null){
+                    callback();
+                }
+            }
+        }
+
+        function iterateCountPopularityForCategories(
+            i, dataSorted, sortField, categoriesCount, totalCount, videoIdSet, callback)
+            {
+                console.log("iterateCountPopularityForCategories");
+                console.log(i);
+                document.getElementById("loading-text").innerHTML="Loading "+i+" / "+dataSorted.length;
+
+                if(includeOrNot(videoIdSet,dataSorted[i].video_id)==false){
+                    if(categoriesCount[dataSorted[i].category_id]!=null){
+                        categoriesCount[dataSorted[i].category_id]+=dataSorted[i][sortField];                                
+                    }else{
+                        categoriesCount[dataSorted[i].category_id]=dataSorted[i][sortField];
+                    }
+                    totalCount+=dataSorted[i][sortField];
+                    
+                    videoIdSet.push(dataSorted[i].video_id);
+                }
+                // }
+
+            i+=1;
+            if(i<dataSorted.length){
+                setTimeout(
+                    function(){
+                        iterateCountPopularityForCategories(i, dataSorted, sortField, categoriesCount, totalCount, videoIdSet, callback);
+                    },0);                
+            }else{               
+                if(callback!=null){
+                    callback();
+                }
+            }
+        }
+
+        function iterateCountVideoNumForCategories(
+            i,regionId,categoriesCount,videoIdSet,callback)
+        {
+            document.getElementById("loading-text").innerHTML="Loading "+i+" / "+videoData[regionId].length;
+
+            if(includeOrNot(videoIdSet,videoData[regionId][i].video_id)==false){
+                if(categoriesCount[videoData[regionId][i].category_id]!=null){
+                    categoriesCount[videoData[regionId][i].category_id]+=1;
+                }else{
+                    categoriesCount[videoData[regionId][i].category_id]=1;
+                }
+                
+                videoIdSet.push(videoData[regionId][i].video_id);
+            }
+
+            i+=1;
+            if(i<videoData[regionId].length){
+                setTimeout(
+                    function(){
+                        iterateCountVideoNumForCategories(i,regionId,categoriesCount,videoIdSet,callback);
+                    },0);                
+            }else{               
+                if(callback!=null){
+                    callback();
+                }
+            }
+        }
+
+        function searchVideoData(regionId, categoryId, topicId, maxSearchNum, async, callback){
+
+            if(videoData==null || videoData[regionId]==null){
+
+                loadRegionVideoData(regionId, function(){
+                    searchVideoData(regionId, categoryId, topicId, maxSearchNum, async, callback);
+                    }
+                );
+                return;
+            }
+
+            if(categoryData[regionId]==null){
+                loadRegionCategoryData(regionId,function(){
+                    searchVideoData(regionId, categoryId, topicId, maxSearchNum, async, callback);
+                });
+                return;
+            }
+            
+            var cached = getCachedSearchedData(regionId,categoryId,topicId);
+            if(cached!=null){
+                searchedVideoData = cached;
+
+                if(callback!=null){
+                    callback();
+                }
+                return;
+            }
+
+            switch(topicId){
+                case "categories-views":
+                case "categories-likes":
+                case "categories-dislikes":
+                case "categories-comments":                 
+
+                    var sortField;
+                    switch(topicId){
+                        case "categories-views":
+                        sortField="views";
+                        break;
+                        case "categories-likes":
+                        sortField="likes";
+                        break;
+                        case "categories-dislikes":
+                        sortField="dislikes";
+                        break;
+                        case "categories-comments":
+                        sortField="comment_count";
+                        break;
+                    }
+
+                    var dataSorted = videoData[regionId].slice(0);
+                    dataSorted.sort(
+                        function(a,b){
+                            return b[sortField]-a[sortField];
+                        });
+
+                    var videoIdSet = [];
+                    var categoriesCount = {};
+                    var totalCount = 0;
+
+                    if(async){
+                        setTimeout(
+                        function(){
+                            iterateCountPopularityForCategories(
+                                0, dataSorted, sortField, categoriesCount,totalCount, videoIdSet,
+                                function(){
+                                    var temp = [];
+
+                                    for(var key in categoriesCount){
+                                        e = {};
+                                        e.title = categoryData[regionId][key].title;
+                                        e[sortField]=categoriesCount[key];
+                                        e[sortField+"_percent"]=Math.round(categoriesCount[key]/totalCount*1000)/10;
+                                        temp.push(e);
+                                    }
+
+                                    searchedVideoData = temp;                    
+                                    cacheSearchedData(searchedVideoData,regionId,categoryId,topicId);
+
+                                    if(callback!=null){
+                                        callback();
+                                    }
+                                });
+                        },0);
+                    }else{
+                        for(var i=0;i<dataSorted.length;i+=1){
+                            if(includeOrNot(videoIdSet,dataSorted[i].video_id)==false){
+                                if(categoriesCount[dataSorted[i].category_id]!=null){
+                                    categoriesCount[dataSorted[i].category_id]+=dataSorted[i][sortField];                                
+                                }else{
+                                    categoriesCount[dataSorted[i].category_id]=dataSorted[i][sortField];
+                                }
+                                totalCount+=dataSorted[i][sortField];
+                                
+                                videoIdSet.push(dataSorted[i].video_id);
+                            }
+                        }
+
+                        var temp = [];
+
+                        for(var key in categoriesCount){
+                            e = {};
+                            e.title = categoryData[regionId][key].title;
+                            e[sortField]=categoriesCount[key];
+                            e[sortField+"_percent"]=Math.round(categoriesCount[key]/totalCount*1000)/10;
+                            temp.push(e);
+                        }
+
+                        searchedVideoData = temp;
+                        cacheSearchedData(searchedVideoData,regionId,categoryId,topicId);
+
+                        if(callback!=null){
+                            callback();
+                        }
+                    }
+
+                    return;
+            }
+
+            if(topicId=="categories-video-num"){
+
+                var videoIdSet = [];
+                var categoriesCount = {};
+
+                if(async){
+                    setTimeout(
+                    function(){
+                        iterateCountVideoNumForCategories(
+                            0, regionId, categoriesCount, videoIdSet,
+                            function(){
+                                var temp = [];
+                                
+                                for(var key in categoriesCount){
+                                    if(categoryData[regionId][key]==null){
+                                        console.log(regionId+" category data missing key "+key);
+                                        continue;
+                                    }
+                                    temp.push({
+                                        title:categoryData[regionId][key].title,
+                                        video_num:categoriesCount[key],
+                                        video_num_percent:Math.round(categoriesCount[key]/videoIdSet.length*1000)/10
+                                    });
+                                }
+
+                                searchedVideoData = temp;
+                                cacheSearchedData(searchedVideoData,regionId,categoryId,topicId);
+
+                                if(callback!=null){
+                                    callback();
+                                }
+                            });
+                    },0);
+                
+                }else{
+                    for(var i=0;i<videoData[regionId].length;i+=1){
+                        if(includeOrNot(videoIdSet,videoData[regionId][i].video_id)==false){
+                            if(categoriesCount[videoData[regionId][i].category_id]!=null){
+                                categoriesCount[videoData[regionId][i].category_id]+=1;
+                            }else{
+                                categoriesCount[videoData[regionId][i].category_id]=1;
+                            }
+                            
+                            videoIdSet.push(videoData[regionId][i].video_id);
+                        }
+                    }
+
+                    var temp = [];
+       
+                    for(var key in categoriesCount){
+                        if(categoryData[regionId][key]==null){
+                            console.log(regionId+" category data missing key "+key);
+                            continue;
+                        }
+                        temp.push({
+                            title:categoryData[regionId][key].title,
+                            video_num:categoriesCount[key],
+                            video_num_percent:Math.round(categoriesCount[key]/videoIdSet.length*1000)/10
+                        });
+                    }
+
+                    searchedVideoData = temp;
+                    cacheSearchedData(searchedVideoData,regionId,categoryId,topicId);
+
+                    if(callback!=null){
+                        callback();
+                    }
+                }
+                return;
+            }
+
+            if(topicId=="title-word-cloud" || topicId=="tag-word-cloud"){
+    
+                var videoIdSet = [];
+                var tempWordsCount = {};      
+
+                if(async){
+
+                    setTimeout(
+                    function(){
+                        iterateCountWords(0, regionId, categoryId, topicId,
+                        tempWordsCount, videoIdSet,
+                            function(){
+      
+                                var tempWordCloudData = [];
+                                for(var key in tempWordsCount){
+                                    tempWordCloudData.push(
+                                        {
+                                            text:key,
+                                            size:tempWordsCount[key]
+                                        }
+                                    );
+                                }                  
+             
+                                searchedVideoData = tempWordCloudData;
+                                cacheSearchedData(searchedVideoData,regionId,categoryId,topicId);
+
+                                if(callback!=null){
+                                    callback();
+                                }
+                        });
+                    },0);
+                }else{
+                    for(var i=0;i<videoData[regionId].length;i+=1){
+                        if(categoryId==allCategoriesId || videoData[regionId][i].category_id==categoryId){
+                            if(includeOrNot(videoIdSet,videoData[regionId][i].video_id)==false){
+                                
+                                var wordArray;
+                                if(topicId == "title-word-cloud"){
+                                    var title = videoData[regionId][i].title;
+                                    title = title.replace(/[‘’“”?.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+                                    wordArray = title.split(/[ ]+/);
+                                }else if(topicId=="tag-word-cloud"){
+                                    var tags = videoData[regionId][i].tags;
+                                    // tags = title.replace(/[‘’“”?.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+                                    wordArray = tags.split("|");
+                                }                            
+                            
+                                for(var j=0;j<wordArray.length;j+=1){
+                                    var word = wordArray[j];
+                                    word = word.toLowerCase();
+                                    if(word in tempWordsCount){
+                                        tempWordsCount[word]+=1;
+                                    }else{
+                                        tempWordsCount[word]=1;
+                                    }
+                                }
+
+                                videoIdSet.push(videoData[regionId][i].video_id);
+                            }
+                        }
+                    }
+                  
+                    var tempWordCloudData = [];
+                    for(var key in tempWordsCount){
+                        tempWordCloudData.push(
+                            {
+                                text:key,
+                                size:tempWordsCount[key]
+                            }
+                        );
+                    }
+                    
+                    searchedVideoData = tempWordCloudData;
+                    cacheSearchedData(searchedVideoData,regionId,categoryId,topicId);
+
+                    if(callback!=null){
+                        callback();
+                    }
+
+                }
+                
+                return;
+            
+            }
+
+            var sortField;
+            switch(topicId){
+                case "most-viewed":
+                sortField="views";
+                break;
+                case "most-liked":
+                sortField="likes";
+                break;
+                case "most-disliked":
+                sortField="dislikes";
+                break;
+                case "most-commented":
+                sortField="comment_count";
+                break;
+            }
+            
+            var sortFunc;
+            switch(topicId){
+                case "most-viewed":              
+                case "most-liked":               
+                case "most-disliked": 
+                case "most-commented":
+                sortFunc = function(a,b){
+                    return b[sortField]-a[sortField];
+                };
+                break;
+                case "highest-likes-to-dislikes":
+                sortFunc = function(a,b){
+                    if(a["dislikes"]==0){
+                        return 1;
+                    }
+                    if(b["dislikes"]==0){
+                        return -1;
+                    }
+                    return b["likes"]/b["dislikes"]-a["likes"]/a["dislikes"];
+                };
+                break;
+                case "highest-dislikes-to-likes":
+                sortFunc = function(a,b){
+                    if(a["likes"]==0){
+                        return 1;
+                    }
+                    if(b["likes"]==0){
+                        return -1;
+                    }
+                    return b["dislikes"]/b["likes"]-a["dislikes"]/a["likes"];
+                };
+                break;
+            }          
+            
+            var dataSorted = videoData[regionId].slice(0);
+            dataSorted.sort(sortFunc);
+
+            var videoIdSet = [];
+            var temp=[];
+
+            for(var i=0;i<dataSorted.length && temp.length<maxSearchNum;i+=1){
+ 
+                if(categoryId==allCategoriesId || dataSorted[i].category_id==categoryId){
+                    if(includeOrNot(videoIdSet,dataSorted[i].video_id)==false){
+         
+                        videoIdSet.push(dataSorted[i].video_id);
+                        switch(topicId){                           
+                            case "highest-likes-to-dislikes":
+                                dataSorted[i]["likes_to_dislikes"]=Math.round(dataSorted[i]["likes"]/dataSorted[i]["dislikes"]*10)/10;
+                            break;
+                            case "highest-dislikes-to-likes":                       
+                                dataSorted[i]["dislikes_to_likes"]=Math.round(dataSorted[i]["dislikes"]/dataSorted[i]["likes"]*1000)/1000;
+                            break;
+                        }        
+                        
+                        temp.push(dataSorted[i]);
+                    }
+                }
+            }
+
+            if(temp.length==0){
+                alert("No data found.");
+            }
+
+            searchedVideoData = temp;
+
+            if(callback!=null){
+                callback();
+            }
+
+        }
+
+        function getRegionCategoriesVideoNum(regionId){
+            console.log("getRegionCategoriesVideoNum for "+regionId);
+
+            var videoIdSet = [];
+            var categoriesCount = {};
+
+            for(var i=0;i<videoData[regionId].length;i+=1){
+                if(includeOrNot(videoIdSet,videoData[regionId][i].video_id)==false){
+                    if(categoriesCount[videoData[regionId][i].category_id]!=null){
+                        categoriesCount[videoData[regionId][i].category_id]+=1;
+                    }else{
+                        categoriesCount[videoData[regionId][i].category_id]=1;
+                    }
+                    
+                    videoIdSet.push(videoData[regionId][i].video_id);
+                }
+            }
+
+            var temp = [];
+            console.log(categoryData);
+            for(var key in categoriesCount){
+                temp.push({
+                    title:categoryData[regionId][key].title,
+                    video_num:categoriesCount[key],
+                    video_num_percent:Math.round(categoriesCount[key]/videoIdSet.length*1000)/10
+                });
+            }
+            return temp;
+        }
+
+        function cleanVideoPlayer(){
+            var vidList = document.getElementById("vid-list");
+       
+            while (vidList.firstChild) {
+                vidList.removeChild(vidList.firstChild);
+            }
+
+            vidList.style.width=640+"px";
+            document.getElementById('vid-rank').innerHTML = "";
+        }
+
+        function loadVideoPlayer(){
+           
+            var vidList = document.getElementById("vid-list");
+
+            var playerVideoData=searchedVideoData;
+
+            vidList.style.width=Math.max(148*playerVideoData.length,640)+"px";
+
+            if(playerVideoData.length==0){
+                document.getElementById('vid_frame').src="";
+                document.getElementById("404-img").style.display = "block";
+                document.getElementById('vid-title').innerHTML = "No Data Found";
+                document.getElementById('vid-rank').innerHTML = "";
+                return;    
+            }else{
+                document.getElementById("404-img").style.display = "none";
+            }
+
+            for(var i=0;i<playerVideoData.length;i+=1){
+                var vidItem = document.createElement("div");
+                vidItem.setAttribute("class","vid-item");
+                
+                var thumb = document.createElement("div");
+                thumb.setAttribute("class","thumb");
+                
+                var thumbImage = document.createElement("img");
+                thumbImage.setAttribute("src",playerVideoData[i].thumbnail_link);
+
+                thumb.appendChild(thumbImage);
+
+                var desc = document.createElement("div");
+                desc.setAttribute("class","desc");
+                desc.innerHTML = playerVideoData[i].title;
+                
+                vidItem.appendChild(thumb);
+                vidItem.appendChild(desc);
+
+                vidItem.setAttribute("onClick","onClickVideoThumbnail("+i+")");
+                
+                vidList.appendChild(vidItem);
+            }
+
+            onClickVideoThumbnail(0);
+            // var vidItems = document.getElementsByClassName("vid-item");
+
+            // for(var i=0;i<vidItems.length;i+=1){
+            //     var vidItem = vidItems[i];
+
+            //     vidItem.setAttribute("onClick","onClickVideoThumbnail("+i+")");
+                
+            //     for (var j = 0; j < vidItem.childNodes.length; j++) {
+            //         if (vidItem.childNodes[j].className == "thumb") {
+            //             var node = vidItem.childNodes[j];
+                        
+            //             node.childNodes[0].src=playerVideoData[i].thumbnail_link;
+            //             break;
+            //         }        
+            //     }
+                
+            //     for (var j = 0; j < vidItem.childNodes.length; j++) {
+            //         if (vidItem.childNodes[j].className == "desc") {
+            //             var node = vidItem.childNodes[j];
+            //             node.innerHTML=playerVideoData[i].title;
+            //             break;
+            //         }        
+            //     }
+                
+            //     onClickVideoThumbnail(0);
+            // }
+        }
+
+        function cleanRankingTable(){
+            var rankingTable = document.getElementById("ranking-table");
+            while (rankingTable.firstChild) {
+                rankingTable.removeChild(rankingTable.firstChild);
+            }
+            rankingTable.style.display = "none";
+        }
+
+        function loadRankingTable(){
+
+            var tableVideoData = searchedVideoData;
+            if(tableVideoData.length==0){
+                return;
+            }
+
+            if(categoryData[searchedRegionId]==null){
+                loadRegionCategoryData(searchedRegionId,loadRankingTable);
+                return;
+            }
+
+            var rankingTable = document.getElementById("ranking-table");
+            rankingTable.style.display = "table";
+
+            // var captionTopic;
+            var sortField; 
+            switch(searchedTopicId){
+                case "most-viewed":
+                // captionTopic="Most Viewed";
+                sortField="views";
+                break;
+                case "most-liked":
+                // captionTopic="Most Liked";
+                sortField="likes";
+                break;
+                case "most-disliked":
+                // captionTopic="Most Disliked";
+                sortField="dislikes";
+                break;
+                case "most-commented":
+                // captionTopic="Most Commented";
+                sortField="comment_count";
+                break;
+                case "highest-likes-to-dislikes":
+                sortField="likes_to_dislikes";
+                break;
+                case "highest-dislikes-to-likes":
+                sortField="dislikes_to_likes";
+                break;
+            }
+
+            var table = document.getElementById("ranking-table");
+
+            var caption = document.createElement("caption");
+            // caption.innerHTML = regionData[searchedRegionId].name
+            //                     +" "+captionTopic
+            //                     +" "+categoryData[searchedRegionId][searchedCategoryId].title
+            //                     +" Videos";
+            caption.innerHTML = getCaptionText(searchedRegionId, searchedCategoryId, searchedTopicId);
+            // table.append(
+            //     $("<caption></caption>").html(
+            //         regionData[searchedRegionId].name
+            //         +" "+captionTopic
+            //         +" "+categoryData[searchedRegionId][searchedCategoryId].title
+            //         +" Videos")
+            //     );
+            table.appendChild(caption);
+
+            // var thead = $("<thead></thead>");
+     
+            var thead = document.createElement("thead");
+           
+            // thead.append($("<th></th>").html("Rank"))
+
+            var thRank = document.createElement("th");
+            thRank.innerHTML = "Rank";
+            thead.appendChild(thRank);
+
+            // thead.append($("<th></th>").html("Image"))
+
+            var thThumbnail = document.createElement("th");
+            thThumbnail.innerHTML = "Thumbnail";
+            thead.appendChild(thThumbnail);
+
+            // thead.append($("<th></th>").html("Title"))
+
+            var thTitle = document.createElement("th");
+            thTitle.innerHTML = "Title";
+            thead.appendChild(thTitle);
+
+            // thead.append($("<th></th>").html("Category"))
+
+            var thCategory = document.createElement("th");
+            thCategory.innerHTML = "Category";
+            thead.appendChild(thCategory);
+
+            // thead.append($("<th></th>").html("#"+sortField))
+           
+            var thSortField = document.createElement("th");
+            thSortField.innerHTML = "#"+sortField;
+            thead.appendChild(thSortField);
+
+            // table.append(thead);
+            table.appendChild(thead);
+
+            var tbody = document.createElement("tbody");
+            table.appendChild(tbody);
+
+            // table.append($("<tbody></tbody>"))
+
+            for(var i=0;i<tableVideoData.length;i+=1){
+                //var tr = $("<tr></tr>");
+                var tr = document.createElement("tr");
+
+                var tdRank = document.createElement("td");
+
+                tdRank.style.textAlign = "center";
+                tdRank.innerHTML = (i+1);
+                tr.appendChild(tdRank);
+
+                // tr.append($("<td style='text-align: center;'></td>").html(i+1));
+
+                var tdThumbnail = document.createElement("td");
+                var imgThumbnail = document.createElement("img");
+                imgThumbnail.src = tableVideoData[i].thumbnail_link;
+                tdThumbnail.appendChild(imgThumbnail);
+                tr.appendChild(tdThumbnail);
+
+                // var img = $('<img />').attr("src", tableVideoData[i].thumbnail_link);
+                // tr.append($("<td></td>").append(img));
+                
+                var tdTitle = document.createElement("td");
+                tdTitle.style = "font-size:14px; padding:8px 8px 8px 8px;width:480px;";
+                tdTitle.innerHTML = tableVideoData[i].title;
+                tr.appendChild(tdTitle);
+
+                // tr.append($("<td style='font-size:14px;'></td>").html(tableVideoData[i].title));
+
+                // tr.append($("<td></td>").html(categoryData[searchedRegionId][tableVideoData[i].category_id].title));
+
+                var tdCategory = document.createElement("td");
+                tdCategory.innerHTML = categoryData[searchedRegionId][tableVideoData[i].category_id].title;
+                tr.appendChild(tdCategory);
+
+                // tr.append($("<td></td>").html(tableVideoData[i][sortField]));
+                
+                var tdSortField = document.createElement("td");
+                tdSortField.innerHTML = tableVideoData[i][sortField];
+                tr.appendChild(tdSortField);
+
+                // var url = $("<a>").attr("href","https://www.youtube.com/watch?v="+topVideoData[i].video_id);
+                // url.html("https://www.youtube.com/watch?v="+topVideoData[i].video_id);
+                // tr.append($("<td style='font-size:14px;'></td>").append(url));
+
+                tbody.appendChild(tr);
+                // $("tbody").append(tr);
+            }
+
+        }
+
+        function getCaptionText(regionId, categoryId, topicId){
+            var categoryTitle;
+
+            if(categoryId==allCategoriesId){
+                categoryTitle=""
+            }else{
+                categoryTitle=categoryData[regionId][categoryId].title
+            }
+
+            switch(topicId){
+                case "most-viewed":
+                return regionData[regionId].name+" Most Viewed "+categoryTitle+" Videos";
+                break;
+                case "most-liked":
+                return regionData[regionId].name+" Most Liked "+categoryTitle+" Videos";
+                break;
+                case "most-disliked":
+                return regionData[regionId].name+" Most disliked "+categoryTitle+" Videos";
+                break;
+                case "most-commented":
+                return regionData[regionId].name+" Most Commented "+categoryTitle+" Videos";
+                break;
+                case "highest-likes-to-dislikes":
+                return regionData[regionId].name+" "+categoryTitle+" Videos with Highest Likes-to-Dislikes Ratios";
+                break;
+                case "highest-dislikes-to-likes":
+                return regionData[regionId].name+" "+categoryTitle+" Videos with Highest Dislikes-to-Likes Ratios";
+                break;
+                case "title-word-cloud":
+                return regionData[regionId].name+" "+categoryTitle+" Video Title Word Cloud";
+                case "tag-word-cloud":
+                return regionData[regionId].name+" "+categoryTitle+" Video Tag Word Cloud";
+                break;
+                case "categories-video-num":               
+                return regionData[regionId].name+" Categories Trending Video Number";
+                case "categories-views":
+                return regionData[regionId].name+" Categories Views";
+                case "categories-likes":
+                return regionData[regionId].name+" Categories Likes";
+                case "categories-dislikes":
+                return regionData[regionId].name+" Categories Dislikes";
+                case "categories-comments":
+                return regionData[regionId].name+" Categories Comments";
+                break;
+            }
+        }
+
+        function onClickVideoThumbnail(index){
+    
+            var playerVideoData=searchedVideoData;
+            console.log(playerVideoData);
+
+            var videoId = playerVideoData[index].video_id;
+
+            document.getElementById('vid_frame').src="http://youtube.com/embed/"+videoId+"?autoplay=1&rel=0&showinfo=0&autohide=1";
+                    
+            var vidItems = document.getElementsByClassName("vid-item");
+            vidItems = Array.prototype.slice.call(vidItems);
+
+            if(vidItems[selectedVideoIndex]!=null){
+                vidItems[selectedVideoIndex].style.backgroundColor = "rgba(0, 0, 0, 0)";
+            }
+
+            selectedVideoIndex = index;
+
+            vidItems[selectedVideoIndex].style.backgroundColor = "rgba(96, 96, 96, 0.8)";
+
+            document.getElementById('vid-title').innerHTML = playerVideoData[index].title;
+            document.getElementById('vid-rank').innerHTML = "No."+(index+1)+" ";
+            // if(index==0){
+            //     document.getElementById('vid-medal').setAttribute("src","imgs/gold-medal.png");
+            // }else if(index==1){
+            //     document.getElementById('vid-medal').setAttribute("src","imgs/silver-medal.png");
+            // }else if(index==2){
+            //     document.getElementById('vid-medal').setAttribute("src","imgs/bronze-medal.png");
+            // }else{
+            //     document.getElementById('vid-medal').setAttribute("src","");
+            // }
+        }
+
+        function cleanBarGraph(){
+            var barGraph = document.getElementById("bar-graph");
+                while (barGraph.firstChild) {
+                    barGraph.removeChild(barGraph.firstChild);
+                }
+        }
+
+        function loadBarGraph(data, title, xAxisField, yAxisField, tipIndexField,yAxisFormatFunc){
+    
+            var graphData=data;
+
+            if(graphData.length==0){
+                return;
+            }
+            
+            var width = 720;
+            var height = data.length*48;
+
+            var xAxisFontSize = 12;
+            var yAxisFontSize = 12;
+        
+            if(yAxisFormatFunc==null){
+                yAxisFormatFunc=function(d) { return Math.round(d); };
+            }
+            
+            var titleHeight = 0;
+            if(title!=null){
+                titleHeight = 96;
+            }
+
+            margin = {top: 48, right: 120, bottom: 0, left: 120};
+
+            var x = d3.scaleBand()
+                    .rangeRound([titleHeight+20, titleHeight+20+height])
+                    .paddingInner(.1);
+
+            var y = d3.scaleLinear()
+                .range([0, width]);
+
+            var xAxis = d3.axisLeft(x);
+            var yAxis = d3.axisTop(y).tickFormat(yAxisFormatFunc);
+
+            var tip = d3.tip()
+            .attr('class', 'd3-tip')
+            .offset([-10, 0])
+            .html(function(d) {
+                return "<b style='color:lightcoral'>No."+(data.indexOf(d)+1)+"&nbsp</b>"+
+                "<span style='color:white'>" + d[tipIndexField]+ "</span>"+"<br><br>"+
+                "<b>#"+yAxisField+": </b> <span style='color:yellow'>" + d[yAxisField] + "</span>";
+            })
+
+            var svg = d3.select("#bar-graph").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom + titleHeight + 20)
+            .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg.call(tip);
+
+            if(title!=null){
+                svg.append("text")
+             
+                .attr("x", width/2)
+                .attr("y", 32)
+                .style("font-size", graphCaptionFontSize)
+                .attr("height",titleHeight)
+    
+                .style("fill", 'black')
+                .attr("text-anchor", 'middle')
+                .text(title); 
+            }
+
+            x.domain(graphData.map(function(d){
+                return d[xAxisField];}
+            ));
+
+            y.domain([0, d3.max(graphData, function(d){
+                return d[yAxisField];}
+            )]);
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .call(xAxis);
+
+            svg.select(".x.axis")
+                .selectAll("text")
+                .style("font-size","12px")
+                .each(function(){wrap(this,112);});
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .attr("transform","translate(0,"+titleHeight+")")
+                .call(yAxis)
+          
+
+            svg.append("text")
+                .attr("x", width)
+                .attr("y", titleHeight+6)
+                .attr("dy", ".72em")
+                .style("text-anchor", "end")
+                .text("#"+yAxisField);
+
+            svg.selectAll(".bar")
+                .data(graphData)
+            .enter().append("rect")
+                .attr("class", "bar")
+                .attr("y", function(d) { 
+                    return x(d[xAxisField]); 
+                })
+                .attr("height", x.bandwidth())
+
+                .attr("x", 0)
+                .attr("width", function(d) { 
+                    if(y(d[yAxisField])<1){
+                        return 1;
+                    }
+                    return y(d[yAxisField]); 
+                })
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide)
+                return;
+
+        }
+
+        function cleanPieGraph(){
+            var pieGraph = document.getElementById("pie-graph");
+                while (pieGraph.firstChild) {
+                    pieGraph.removeChild(pieGraph.firstChild);
+                }
+        }
+
+        function loadPieGraph(data,title,indexName,valueName,percentName){
+
+            var graphData=data;
+
+            var titleHeight = 0;
+            if(title!=null){
+                titleHeight = 96;
+            }
+            
+            var width = 720;
+            var height = 480;
+            var margin = {top: 48, right: 120, bottom: 0, left: 120};
+
+            var outerRadius = height / 2;
+
+            var innerRadius = 0;
+            var arc = d3.arc()
+                .innerRadius(innerRadius)
+                .outerRadius(outerRadius);
+
+            var labelArc = d3.arc()
+                .outerRadius(outerRadius-48)
+                .innerRadius(outerRadius-48)
+
+            var pie = d3.pie()
+                .value(function(d) {
+                    return d[valueName];
+                })
+                .padAngle(.01);;
+
+            var color = d3.scaleOrdinal(d3.schemeCategory20);;
+
+            var svg = d3.select("#pie-graph").append('svg')
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom + titleHeight + 20)
+            .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                // .attr("width", width)
+                // .attr("height", height)
+                // .style("margin","80 0 20 0")
+                // .style("background-color","red");
+                // .attr("transform", "translate(" + 128 + "," + 0 + ")");
+
+            if(title!=null){
+                svg.append("text")
+                .attr("x", width/2)
+                .attr("y", 48)
+                .style("font-size", graphCaptionFontSize)
+                .attr("height",64)
+                .attr("width",320)
+                .style("fill", 'black')
+                .attr("text-anchor", 'middle')
+                .text(title);
+            }
+            
+            var mousOverCallback = function (d) {
+                d3.select("#tooltip")
+                    .style("left", d3.event.pageX-96+'px')
+                    .style("top", d3.event.pageY-96+'px')
+                    .style("opacity", 1);
+
+                d3.select("#pie-graph-tip-title")
+                    .text(d.data[indexName]);
+
+                d3.select("#pie-graph-tip-value")
+                    .text('#'+valueName+': '+d.data[valueName]);
+
+                if(percentName!=null){
+                    d3.select("#pie-graph-tip-percent")
+                    .text('Percent: '+d.data[percentName]+"%");
+                }else{
+                    d3.select("#pie-graph-tip-percent")
+                    .text("");
+                }
+            }
+            
+            var arcs = svg.selectAll("g.arc")
+                .data(pie(graphData))
+                .enter()
+                .append("g")
+                .attr("class", "arc")
+            
+                .attr("transform", "translate(" + (width/2-48)+ "," + (outerRadius+titleHeight)+ ")")
+            
+                .on("mouseover", mousOverCallback)
+                .on("mousemove", function (d) {
+
+                    d3.select("#tooltip")
+                    .style("left", d3.event.pageX-96+'px')
+                    .style("top", d3.event.pageY-96+'px')
+                    .style("display", "block");
+                })
+                
+                .on("mouseout", function () {
+                    d3.select("#tooltip")
+                    .style("display", "none");
+                });
+
+            
+            arcs.append("path")
+                .attr("fill", function (d, i) {             
+                        return color(i);
+                    })
+                .attr("d", arc);
+
+            // arcs.append("text")
+            //     .style("font-weight", "bold")
+            //     .style("color", "white")
+            //     .attr("transform", function (d) {
+            //         return "translate(" + labelArc.centroid(d) + ")";
+            //     })
+            //     .attr("text-anchor", "middle")
+            //     .text(function (d) {
+            //         return d.data.id;
+            //     });  
+
+            var legend = svg.append("g")
+                .attr("class", "legend");
+                // .attr("x", width)
+                // .attr("y", 25)
+                // .attr("height", 100)
+                // .attr("width", 100);
+
+            legend.selectAll('g').data(graphData)
+                .enter()
+                .append('g')
+                .each(function(d, i) {
+
+                    var g = d3.select(this);
+                    g.append("rect")
+                    .attr("x", width/2 + outerRadius)
+                    .attr("y", i * 25 + 36 + titleHeight)
+                    .attr("width", 16)
+                    .attr("height", 16)
+                    .style("fill", color(i));
+
+                    g.append("text")
+                    .attr("x", width/2 + outerRadius + 32)
+                    .attr("y", i * 25 + 50 + titleHeight)
+                    .style("font-size", 16)
+                    .attr("height",30)
+                    .attr("width",100)
+                    .style("fill", 'black')
+                    .text(d[indexName]);
+
+                });
+        }
+
+        function cleanWordCloudGraph(){
+            var graph = document.getElementById("word-cloud-graph");
+                while (graph.firstChild) {
+                    graph.removeChild(graph.firstChild);
+                }
+        }
+
+        function loadWordCloudGraph(data, title){
+
+            var titleHeight=0;
+            if(title!=null){
+                titleHeight = 72;
+            }          
+
+            var graphWidth = 640;
+            var graphHeight = 480;
+            // var layoutWidth = graphWidth+320;
+            // var layoutHeight = graphHeight+titleHeight;
+            var margin = {top: 48, right: 120, bottom: 0, left: 120};
+
+            var fill = d3.scaleOrdinal(d3.schemeCategory20);
+
+            var dataCopy = JSON.parse(JSON.stringify(data));
+  
+            var oldMaxSize = d3.max(dataCopy, 
+                function(d){
+                    return d.size;
+                    });
+            console.log("oldMaxSize: "+oldMaxSize);
+            var fontSizeScale = wordCloudMaxFontSize/oldMaxSize;
+            
+            var layout = d3.layout.cloud()
+                .size([graphWidth, graphHeight])
+                .words(dataCopy)
+                .padding(5)
+                .rotate(function() { return ~~(Math.random() * 2) * 90; })
+                .font("Impact")
+                .text(function(d) { 
+                    return d.text; 
+                })
+                .fontSize(function(d) { return Math.round(d.size*fontSizeScale); })
+                .on("end", draw);
+            
+            layout.start();                   
+       
+            function draw(words) {
+
+                var svg=d3.select("#word-cloud-graph").append("svg")
+                    .attr("width", graphWidth + margin.left + margin.right)
+                    .attr("height", graphHeight + margin.top + margin.bottom + titleHeight)
+                .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                // .attr("width", layoutWidth)
+                // .attr("height", layoutHeight);
+             
+                if(title!=null){
+                    svg.append("text")
+                    .attr("x", graphWidth/2)
+                    .attr("y", 32)
+                    .style("font-size", graphCaptionFontSize)
+                    .attr("height",titleHeight)
+                    .style("fill", 'black')
+                    .attr("text-anchor", 'middle')
+                    .text(title); 
+                }
+
+                svg.append("g")
+                        .attr("transform", "translate(" + graphWidth / 2 + "," + (graphHeight / 2 + titleHeight) + ")")
+                    .selectAll("text")
+                        .data(words)
+                    .enter().append("text")
+                        .style("font-size", function(d) { 
+                            return d.size + "px"; 
+                        })
+                        .style("font-family", "Impact")
+                        .style("fill", function(d, i) { return fill(i); })
+                        .attr("text-anchor", "middle")
+                        .attr("transform", function(d) {
+                            return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+                        })
+                        .text(function(d) { 
+                            return d.text;
+                        });
+            }
+        }
+
+        var wrap = function(element, width) {
+            var self = d3.select(element),
+                textLength = self.node().getComputedTextLength(),
+                text = self.text();
+            while (textLength > (width) && text.length > 0) {
+                text = text.slice(0, -1);
+                self.text(text + '...');
+                textLength = self.node().getComputedTextLength();
+            }
+        };
+
+        function saveDataToFile(data, filename, type) {
+            var file = new Blob([data], {type: type});
+            if (window.navigator.msSaveOrOpenBlob) // IE10+
+                window.navigator.msSaveOrOpenBlob(file, filename);
+            else { // Others
+                var a = document.createElement("a"),
+                        url = URL.createObjectURL(file);
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function() {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);  
+                }, 0); 
+            }
+        }
+
+        function saveObjectDataToFile(content, fileName, contentType) {
+            var a = document.createElement("a");
+            var file = new Blob([content], {type: contentType});
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            a.click();
+        }
+
+        function getCachedSearchedData(regionId, categoryId, topicId){
+            if(cachedSearchedData==null){
+                return null;
+            }
+            if(cachedSearchedData[regionId]==null){
+                return null;
+            }
+            if(cachedSearchedData[regionId][categoryId]==null){
+                return null;
+            }
+            return cachedSearchedData[regionId][categoryId][topicId];
+        }
+        if(window.Prototype) {
+            delete Object.prototype.toJSON;
+            delete Array.prototype.toJSON;
+            delete Hash.prototype.toJSON;
+            delete String.prototype.toJSON;
+        }
+        function cacheSearchedData(searchedData, regionId, categoryId, topicId){
+            console.log("cacheSearchedData");
+
+            if(cachedSearchedData==null){
+                cachedSearchedData={};
+            }
+            if(cachedSearchedData[regionId]==null){
+                cachedSearchedData[regionId]={};
+            }
+            if(cachedSearchedData[regionId][categoryId]==null){
+                cachedSearchedData[regionId][categoryId]={};
+            }
+            
+            cachedSearchedData[regionId][categoryId][topicId]=searchedData;
+            console.log(cachedSearchedData);
+        }
+
+        function saveCachedSearchedDataToFile(){
+            saveObjectDataToFile(JSON.stringify(cachedSearchedData),cachedSearchedDataFilename,'text/plain');
+        }
+
+        $(".arrow-right").bind("click", function (event) {
+            event.preventDefault();
+
+            $(".vid-list-container").stop().animate({
+                scrollLeft: "+=336"
+            }, 750);
+        });
+        $(".arrow-left").bind("click", function (event) {
+            event.preventDefault();
+
+            $(".vid-list-container").stop().animate({
+                scrollLeft: "-=336"
+            }, 750);
+        });
+    </script>
+  
+</body>
+</html>
